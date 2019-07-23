@@ -9,6 +9,7 @@ const {
   prettifyErrorLog,
   prettifyLevel,
   prettifyMessage,
+  prettifyContext,
   prettifyMetadata,
   prettifyObject,
   prettifyTime
@@ -84,6 +85,8 @@ module.exports = function prettyFactory (options) {
 
     const prettifiedLevel = prettifyLevel({ log, colorizer })
     const prettifiedMessage = prettifyMessage({ log, messageKey, colorizer })
+    const contextKey = 'context'
+    const prettifiedContext = prettifyContext({ log, contextKey, colorizer })
     const prettifiedMetadata = prettifyMetadata({ log })
     const prettifiedTime = prettifyTime({ log, translateFormat: opts.translateTime, timestampKey })
 
@@ -112,6 +115,10 @@ module.exports = function prettyFactory (options) {
 
     if (line.endsWith(':') === false && line !== '') {
       line += ':'
+    }
+
+    if (prettifiedContext) {
+      line = `${line} ${prettifiedContext}`
     }
 
     if (prettifiedMessage) {
