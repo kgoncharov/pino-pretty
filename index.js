@@ -3,13 +3,14 @@
 const chalk = require('chalk')
 const jmespath = require('jmespath')
 const colors = require('./lib/colors')
-const { ERROR_LIKE_KEYS, MESSAGE_KEY, TIMESTAMP_KEY } = require('./lib/constants')
+const { ERROR_LIKE_KEYS, MESSAGE_KEY, CONTEXT_KEY, FN_KEY, TIMESTAMP_KEY } = require('./lib/constants')
 const {
   isObject,
   prettifyErrorLog,
   prettifyLevel,
   prettifyMessage,
   prettifyContext,
+  prettifyFn,
   prettifyMetadata,
   prettifyObject,
   prettifyTime
@@ -31,6 +32,8 @@ const defaultOptions = {
   errorProps: '',
   levelFirst: false,
   messageKey: MESSAGE_KEY,
+  contextKey: CONTEXT_KEY,
+  fnKey: FN_KEY,
   timestampKey: TIMESTAMP_KEY,
   translateTime: false,
   useMetadata: false,
@@ -42,6 +45,8 @@ module.exports = function prettyFactory (options) {
   const EOL = opts.crlf ? '\r\n' : '\n'
   const IDENT = '    '
   const messageKey = opts.messageKey
+  const contextKey = opts.contextKey
+  const fnKey = opts.fnKey
   const timestampKey = opts.timestampKey
   const errorLikeObjectKeys = opts.errorLikeObjectKeys
   const errorProps = opts.errorProps.split(',')
@@ -85,8 +90,8 @@ module.exports = function prettyFactory (options) {
 
     const prettifiedLevel = prettifyLevel({ log, colorizer })
     const prettifiedMessage = prettifyMessage({ log, messageKey, colorizer })
-    const contextKey = 'context'
     const prettifiedContext = prettifyContext({ log, contextKey, colorizer })
+    const prettifiedFn = prettifyFn({ log, fnKey, colorizer })
     const prettifiedMetadata = prettifyMetadata({ log })
     const prettifiedTime = prettifyTime({ log, translateFormat: opts.translateTime, timestampKey })
 
@@ -121,6 +126,13 @@ module.exports = function prettyFactory (options) {
       line = `${line} ${prettifiedContext}`
     }
 
+    if (prettifiedFn) {
+      if (prettifiedContext) {
+        line = `${line} ::`
+      }
+      line = `${line} ${prettifiedFn}`
+    }
+
     if (prettifiedMessage) {
       line = `${line} ${prettifiedMessage}`
     }
@@ -139,10 +151,14 @@ module.exports = function prettyFactory (options) {
       })
       line += prettifiedErrorLog
     } else {
-      const skipKeys = typeof log[messageKey] === 'string' ? [messageKey] : undefined
+      const skipKeys = []
+      if (typeof log[messageKey] === 'string') skipKeys.push(messageKey)
+      if (typeof log[contextKey] === 'string') skipKeys.push(contextKey)
+      if (typeof log[fnKey] === 'string') skipKeys.push(fnKey)
+
       const prettifiedObject = prettifyObject({
         input: log,
-        skipKeys,
+        skipKeys: skipKeys.length ? skipKeys : undefined,
         errorLikeKeys: errorLikeObjectKeys,
         eol: EOL,
         ident: IDENT
